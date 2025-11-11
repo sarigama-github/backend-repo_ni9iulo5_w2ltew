@@ -2,47 +2,51 @@
 Database Schemas
 
 Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
 Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+
+Class name lowercased = collection name
+- Habit -> "habit"
+- RoadmapItem -> "roadmapitem"
+- Resource -> "resource"
+- Progress -> "progress"
+- Message -> "message"
 """
-
+from typing import List, Optional
 from pydantic import BaseModel, Field
-from typing import Optional
+from datetime import date, datetime
 
-# Example schemas (replace with your own):
+class Habit(BaseModel):
+    name: str = Field(..., description="Habit title, e.g., 'Read 30 minutes a day'")
+    description: Optional[str] = Field(None, description="Short description or goal context")
+    start_date: Optional[date] = Field(None, description="When the habit starts")
+    target_days_per_week: int = Field(5, ge=1, le=7, description="Target frequency per week")
+    progress: float = Field(0.0, ge=0, le=1, description="Overall completion ratio 0..1")
 
-class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+class RoadmapItem(BaseModel):
+    habit_id: str = Field(..., description="Reference to habit _id as string")
+    title: str = Field(..., description="Milestone title")
+    description: Optional[str] = Field(None)
+    order: int = Field(..., ge=0, description="Milestone order index")
+    due_date: Optional[date] = Field(None)
+    completed: bool = Field(False)
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+class Resource(BaseModel):
+    habit_id: str = Field(..., description="Reference to habit _id as string")
+    title: str
+    url: str
+    type: str = Field("article", description="article|video|course|podcast|tool")
+    provider: Optional[str] = None
+    notes: Optional[str] = None
 
-# Add your own schemas here:
-# --------------------------------------------------
+class Progress(BaseModel):
+    habit_id: str = Field(...)
+    note: Optional[str] = None
+    image_base64: Optional[str] = Field(None, description="Base64-encoded image payload")
+    taken_at: datetime = Field(default_factory=datetime.utcnow)
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class Message(BaseModel):
+    habit_id: Optional[str] = None
+    role: str = Field(..., description="user|assistant")
+    content: str
+    image_base64: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
